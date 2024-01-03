@@ -8,11 +8,9 @@ namespace Domain.Interfaces
 
         Product GetById(Guid id);
 
-        Product GetByCode(string code);
+        bool Insert(Product product);
 
-        Product? Insert(Product product);
-
-        Product? Update(Product product);
+        bool Update(Product product);
 
         bool Delete(Guid id);
     }

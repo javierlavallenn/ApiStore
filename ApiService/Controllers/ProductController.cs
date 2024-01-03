@@ -1,6 +1,8 @@
-﻿using Domain.Dtos.ProductDto;
-using Domain.Dtos.UserDto;
+﻿using Domain.Common;
+using Domain.Entities;
 using Domain.Interfaces;
+using Domain.Models.ProductDto;
+using Domain.Models.Response;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -10,25 +12,30 @@ namespace ApiService.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly IProductService _service;
-        public ProductController(IProductService service) => _service = service;
+        private readonly IProductRepository _repository;
+
+        public ProductController(IProductRepository repository)
+        {
+            _repository = repository;
+        }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public ActionResult GetAll()
         {
             try
             {
-                IEnumerable<ReadProductDto> product = _service.GetAll();
+                IEnumerable<Product> products = _repository.GetAll();
 
-                if (product == null)
-                    return NotFound("Products not found");
+                if (!products.Any())
+                    return Ok(Array.Empty<Product>());
 
-                return Ok(product);
+                return Ok(products);
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Log.Error(e.Message);
-                throw new Exception(e.Message);
+                Log.Error(error.Message);
+
+                throw new Exception($"An unexpected error occurred: {error.Message}");
             }
         }
 
@@ -37,52 +44,110 @@ namespace ApiService.Controllers
         {
             try
             {
-                ReadProductDto product = _service.GetById(id);
+                Product product = _repository.GetById(id);
 
                 if (product is null)
-                    return NotFound($"Error, the product with the id: {id}, was nnot found");
+                    return NotFound($"An error has occurred,the product with the id: {id} does not exist");
 
-                return Ok(product);
+                return Ok(new Result<ProductResponse>()
+                {
+                    Failure = false,
+                    Message = "success",
+                    Data = new ProductResponse()
+                    {
+                        Name = product.Name,
+                        Price = product.Price,
+                        Description = product.Description,
+                    }
+                });
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Log.Error(e.Message);
-                throw new Exception(e.Message);
+
+                Log.Error(error.Message);
+
+                throw new Exception($"An unexpected error occurred: {error.Message}");
             }
         }
 
         [HttpPost]
-        public IActionResult Insert(CreateProductDto req)
+        public IActionResult Create(CreateProductRequest req)
         {
+            Product product = new()
+            {
+                Id = Guid.NewGuid(),
+                Name = req.Name,
+                Price = req.Price,
+                Description = req.Description,
+                Code = req.Code,
+                IsPublished = req.IsPublished,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+            };
+
             try
             {
-                ReadProductDto newProduct = _service.Insert(req);
+                bool newProduct = _repository.Insert(product);
 
-                return Ok(newProduct);
+                if (!newProduct)
+                    return BadRequest("An error occurred while creating a product, please try again!");
+
+                return Ok(new Result<ProductResponse>()
+                {
+                    Failure = false,
+                    Message = "success",
+                    Data = new ProductResponse()
+                    {
+                        Name = product.Name,
+                        Price = product.Price,
+                        Description = product.Description,
+                    }
+                });
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Log.Error(e.Message);
-                throw new Exception(e.Message);
+                Log.Error(error.Message);
+
+                throw new Exception($"An unexpected error occurred: {error.Message}");
             }
         }
 
         [HttpPut]
-        public IActionResult Update(UpdateProductDto req)
+        public IActionResult Update(UpdateProductRequest req)
         {
             try
             {
-                if (_service.GetById(req.Id) is null)
-                    return NotFound($"Error, product whit id {req.Id}, not found");
+                Product product = _repository.GetById(req.Id);
 
-                ReadProductDto updateProduct = _service.Update(req);
+                if (product is null)
+                    return NotFound($"An error has occurred,the product with the id: {req.Id} does not exist");
 
-                return Ok(updateProduct);
+                product.Name = req.Name;
+                product.Price = req.Price;
+                product.IsPublished = req.IsPublished;
+
+                bool updatedProduct = _repository.Update(product);
+
+                if (!updatedProduct)
+                    return BadRequest("An error occurred when trying to update a product, try again");
+
+                return StatusCode(201, new Result<ProductResponse>()
+                {
+                    Failure = false,
+                    Message = "success",
+                    Data = new ProductResponse()
+                    {
+                        Name = product.Name,
+                        Price = product.Price,
+                        Description = product.Description,
+                    }
+                });
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Log.Error(e.Message);
-                throw new Exception(e.Message);
+                Log.Error(error.Message);
+
+                throw new Exception($"An unexpected error occurred: {error.Message}");
             }
         }
 
@@ -91,17 +156,18 @@ namespace ApiService.Controllers
         {
             try
             {
-                var result = _service.Delete(id);
+                bool deletedProduct = _repository.Delete(id);
 
-                if (!result)
-                    return StatusCode(500);
+                if (!deletedProduct)
+                    return BadRequest("");
 
                 return Ok(true);
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Log.Error(e.Message);
-                throw new Exception(e.Message);
+                Log.Error(error.Message);
+
+                throw new Exception($"An unexpected error occurred: {error.Message}");
             }
         }
     }

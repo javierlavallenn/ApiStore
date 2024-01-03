@@ -1,6 +1,6 @@
-﻿namespace Domain.Dtos.UserDto
+﻿namespace Domain.Models.ProductDto
 {
-    public class CreateProductDto
+    public class CreateProductRequest
     {
         public string Name { get; set; }
 

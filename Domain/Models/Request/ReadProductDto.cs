@@ -1,4 +1,4 @@
-﻿namespace Domain.Dtos.ProductDto
+﻿namespace Domain.Models.ProductDto
 {
     public class ReadProductDto
     {

@@ -1,6 +1,6 @@
-﻿namespace Domain.Dtos.UserDto
+﻿namespace Domain.Models.ProductDto
 {
-    public class UpdateProductDto
+    public class UpdateProductRequest
     {
         public Guid Id { get; set; }
         public string Name { get; set; }

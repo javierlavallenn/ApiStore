@@ -1,4 +1,3 @@
-using ApiService.Service;
 using Domain.Interfaces;
 using Infrastructure;
 
@@ -7,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Inyeccion de la capa de Infrastructura
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddScoped<IProductService,ProductService>();
 
 builder.Services.AddControllers();
 
